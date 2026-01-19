@@ -178,6 +178,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # React web
     "http://localhost:5173",  # Vite
     "http://localhost:19006", # React Native
+    "http://127.0.0.1:5173",  # Important pour Windows
 ]
 
 CORS_ALLOW_CREDENTIALS = True

@@ -13,8 +13,9 @@ const BoutiqueModal = ({ boutique, onClose }) => {
     email: '',
     type_boutique: 'physique',
   });
+  const [error, setError] = useState('');
 
-  /*useEffect(() => {
+  useEffect(() => {
     if (boutique) {
       setFormData({
         nom: boutique.nom || '',
@@ -25,31 +26,8 @@ const BoutiqueModal = ({ boutique, onClose }) => {
         type_boutique: boutique.type_boutique || 'physique',
       });
     }
-  }, []);*/
-  // Initialise les données quand le modal s'ouvre
-useEffect(() => {
-  if (boutique) {
-    setFormData({
-      nom: boutique.nom || '',
-      description: boutique.description || '',
-      adresse: boutique.adresse || '',
-      telephone: boutique.telephone || '',
-      email: boutique.email || '',
-      type_boutique: boutique.type_boutique || 'physique',
-    });
-  } else {
-    // Réinitialise le formulaire si pas de boutique
-    setFormData({
-      nom: '',
-      description: '',
-      adresse: '',
-      telephone: '',
-      email: '',
-      type_boutique: 'physique',
-    });
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []); // Tableau vide = s'exécute une seule fois
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const mutation = useMutation({
     mutationFn: (data) =>
@@ -66,7 +44,26 @@ useEffect(() => {
       onClose();
     },
     onError: (error) => {
-      alert(error.response?.data?.error || 'Une erreur est survenue');
+      console.error('Erreur complète:', error.response?.data);
+      const errorData = error.response?.data;
+      
+      if (errorData) {
+        // Afficher toutes les erreurs de validation
+        const errorMessages = Object.entries(errorData)
+          .map(([key, value]) => {
+            if (Array.isArray(value)) {
+              return `${key}: ${value.join(', ')}`;
+            }
+            return `${key}: ${value}`;
+          })
+          .join('\n');
+        
+        setError(errorMessages || 'Une erreur est survenue');
+        alert(errorMessages || 'Une erreur est survenue');
+      } else {
+        setError('Une erreur est survenue');
+        alert('Une erreur est survenue');
+      }
     },
   });
 
@@ -75,10 +72,28 @@ useEffect(() => {
       ...formData,
       [e.target.name]: e.target.value,
     });
+    setError('');
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setError('');
+    
+    // Validation côté client
+    if (!formData.nom.trim()) {
+      setError('Le nom est requis');
+      return;
+    }
+    if (!formData.adresse.trim()) {
+      setError('L\'adresse est requise');
+      return;
+    }
+    if (!formData.telephone.trim()) {
+      setError('Le téléphone est requis');
+      return;
+    }
+
+    console.log('Données envoyées:', formData);
     mutation.mutate(formData);
   };
 
@@ -100,6 +115,12 @@ useEffect(() => {
 
         {/* Formulaire */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
           <div>
             <label className="label">Nom de la boutique *</label>
             <input
@@ -108,6 +129,7 @@ useEffect(() => {
               value={formData.nom}
               onChange={handleChange}
               className="input"
+              placeholder="Ex: Boutique Centre-Ville"
               required
             />
           </div>
@@ -135,6 +157,7 @@ useEffect(() => {
               value={formData.adresse}
               onChange={handleChange}
               className="input"
+              placeholder="Ex: Avenue de la République, Niamey"
               required
             />
           </div>
@@ -148,6 +171,7 @@ useEffect(() => {
                 value={formData.telephone}
                 onChange={handleChange}
                 className="input"
+                placeholder="Ex: +227 90 00 00 00"
                 required
               />
             </div>
@@ -160,6 +184,7 @@ useEffect(() => {
                 value={formData.email}
                 onChange={handleChange}
                 className="input"
+                placeholder="Ex: contact@boutique.com"
               />
             </div>
           </div>
@@ -172,6 +197,7 @@ useEffect(() => {
               onChange={handleChange}
               className="input"
               rows="3"
+              placeholder="Décrivez votre boutique..."
             />
           </div>
 
@@ -181,6 +207,7 @@ useEffect(() => {
               type="button"
               onClick={onClose}
               className="flex-1 btn-secondary"
+              disabled={mutation.isPending}
             >
               Annuler
             </button>

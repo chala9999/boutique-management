@@ -15,18 +15,18 @@ class BoutiqueSerializer(serializers.ModelSerializer):
             'gestionnaires', 'gestionnaires_info', 'is_active', 'logo',
             'nombre_produits', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'proprietaire']
     
     def get_nombre_produits(self, obj):
         return obj.produits.count()
     
-    def create(self, validated_data):
+    #def create(self, validated_data):
         # Le propriétaire est automatiquement l'utilisateur connecté
-        validated_data['proprietaire'] = self.context['request'].user
-        gestionnaires = validated_data.pop('gestionnaires', [])
-        boutique = Boutique.objects.create(**validated_data)
-        boutique.gestionnaires.set(gestionnaires)
-        return boutique
+        #validated_data['proprietaire'] = self.context['request'].user
+        #gestionnaires = validated_data.pop('gestionnaires', [])
+        #boutique = Boutique.objects.create(**validated_data)
+        #boutique.gestionnaires.set(gestionnaires)
+        #return boutique
 
 
 class BoutiqueListSerializer(serializers.ModelSerializer):

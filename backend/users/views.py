@@ -17,6 +17,70 @@ class UserViewSet(viewsets.ModelViewSet):
             return [AllowAny()]
         return [IsAuthenticated()]
     
+    def get_queryset(self):
+        """Seuls les admins peuvent voir tous les utilisateurs"""
+        user = self.request.user
+        if user.role == 'admin':
+            return User.objects.all()
+        # Les autres voient seulement leur propre profil
+        return User.objects.filter(id=user.id)
+    
+    def create(self, request, *args, **kwargs):
+        """Créer un utilisateur (réservé aux admins)"""
+        if request.user.role != 'admin':
+            return Response(
+                {'error': 'Seuls les administrateurs peuvent créer des utilisateurs'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response(
+                UserSerializer(user).data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def update(self, request, *args, **kwargs):
+        """Modifier un utilisateur"""
+        user = self.get_object()
+        
+        # Seul un admin ou l'utilisateur lui-même peut se modifier
+        if request.user.role != 'admin' and request.user.id != user.id:
+            return Response(
+                {'error': 'Vous ne pouvez pas modifier cet utilisateur'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Un non-admin ne peut pas changer son propre rôle
+        if request.user.role != 'admin' and 'role' in request.data:
+            return Response(
+                {'error': 'Vous ne pouvez pas modifier votre propre rôle'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        return super().update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        """Supprimer un utilisateur (réservé aux admins)"""
+        if request.user.role != 'admin':
+            return Response(
+                {'error': 'Seuls les administrateurs peuvent supprimer des utilisateurs'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        user = self.get_object()
+        
+        # Empêcher de se supprimer soi-même
+        if user.id == request.user.id:
+            return Response(
+                {'error': 'Vous ne pouvez pas vous supprimer vous-même'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        return super().destroy(request, *args, **kwargs)
+    
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def register(self, request):
         """Inscription d'un nouvel utilisateur"""
@@ -41,6 +105,13 @@ class UserViewSet(viewsets.ModelViewSet):
             user = authenticate(username=username, password=password)
             
             if user:
+                # Vérifier que l'utilisateur est actif
+                if not user.is_active:
+                    return Response(
+                        {'error': 'Ce compte est désactivé'},
+                        status=status.HTTP_401_UNAUTHORIZED
+                    )
+                
                 refresh = RefreshToken.for_user(user)
                 return Response({
                     'user': UserSerializer(user).data,
@@ -58,3 +129,60 @@ class UserViewSet(viewsets.ModelViewSet):
         """Récupérer les infos de l'utilisateur connecté"""
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def toggle_active(self, request, pk=None):
+        """Activer/Désactiver un utilisateur (admin seulement)"""
+        if request.user.role != 'admin':
+            return Response(
+                {'error': 'Seuls les administrateurs peuvent activer/désactiver des utilisateurs'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        user = self.get_object()
+        
+        # Empêcher de se désactiver soi-même
+        if user.id == request.user.id:
+            return Response(
+                {'error': 'Vous ne pouvez pas vous désactiver vous-même'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user.is_active = not user.is_active
+        user.save()
+        
+        return Response({
+            'message': f'Utilisateur {"activé" if user.is_active else "désactivé"} avec succès',
+            'user': UserSerializer(user).data
+        })
+    
+    @action(detail=True, methods=['post'])
+    def change_password(self, request, pk=None):
+        """Changer le mot de passe d'un utilisateur"""
+        user = self.get_object()
+        
+        # Seul un admin ou l'utilisateur lui-même peut changer le mot de passe
+        if request.user.role != 'admin' and request.user.id != user.id:
+            return Response(
+                {'error': 'Vous ne pouvez pas modifier le mot de passe de cet utilisateur'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        new_password = request.data.get('new_password')
+        
+        if not new_password:
+            return Response(
+                {'error': 'Le nouveau mot de passe est requis'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if len(new_password) < 6:
+            return Response(
+                {'error': 'Le mot de passe doit contenir au moins 6 caractères'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user.set_password(new_password)
+        user.save()
+        
+        return Response({'message': 'Mot de passe modifié avec succès'})

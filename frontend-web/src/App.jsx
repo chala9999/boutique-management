@@ -20,6 +20,7 @@ import NouvelleVente from './pages/ventes/NouvelleVente';
 import Clients from './pages/clients/Clients';
 import Fournisseurs from './pages/fournisseurs/Fournisseurs';
 import Commandes from './pages/commandes/Commandes';
+import Users from './pages/users/Users';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -83,6 +84,7 @@ function App() {
             <Route path="/clients" element={<Clients />} />
             <Route path="/fournisseurs" element={<Fournisseurs />} />
             <Route path="/commandes" element={<Commandes />} />
+            <Route path="/users" element={<Users />} />
           </Route>
 
           {/* Redirection par défaut */}

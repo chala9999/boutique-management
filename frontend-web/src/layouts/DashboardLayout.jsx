@@ -11,6 +11,7 @@ import {
   LogOut,
   Menu,
   X,
+  UserCog,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -28,6 +29,7 @@ const DashboardLayout = () => {
     { name: 'Clients', href: '/clients', icon: Users },
     { name: 'Fournisseurs', href: '/fournisseurs', icon: Truck },
     { name: 'Commandes', href: '/commandes', icon: FileText },
+    { name: 'Users', href: '/users', icon: UserCog },
   ];
 
   const handleLogout = () => {
