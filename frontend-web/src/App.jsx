@@ -21,6 +21,8 @@ import Clients from './pages/clients/Clients';
 import Fournisseurs from './pages/fournisseurs/Fournisseurs';
 import Commandes from './pages/commandes/Commandes';
 import Users from './pages/users/Users';
+import NouvelleCommande from './pages/commandes/NouvelleCommande';
+import DetailCommande from './pages/commandes/DetailCommande';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -85,6 +87,9 @@ function App() {
             <Route path="/fournisseurs" element={<Fournisseurs />} />
             <Route path="/commandes" element={<Commandes />} />
             <Route path="/users" element={<Users />} />
+            <Route path="/commandes" element={<Commandes />} />
+            <Route path="/commandes/nouvelle" element={<NouvelleCommande />} />
+            <Route path="/commandes/:id" element={<DetailCommande />} />
           </Route>
 
           {/* Redirection par défaut */}

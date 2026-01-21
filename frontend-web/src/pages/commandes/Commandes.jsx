@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+/*import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';*/
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { commandesAPI } from '../../api/fournisseurs';
 import { boutiquesAPI } from '../../api/boutiques';
 import { fournisseursAPI } from '../../api/fournisseurs';
@@ -115,7 +116,7 @@ const Commandes = () => {
           </p>
         </div>
         <button
-          onClick={() => alert('Fonctionnalité à venir')}
+          onClick={() => navigate('/commandes/nouvelle')}
           className="btn-primary flex items-center space-x-2"
         >
           <Plus className="w-5 h-5" />
@@ -279,7 +280,7 @@ const Commandes = () => {
             Commencez par créer votre première commande
           </p>
           <button
-            onClick={() => alert('Fonctionnalité à venir')}
+            onClick={() => navigate('/commandes/nouvelle')}
             className="btn-primary inline-flex items-center space-x-2"
           >
             <Plus className="w-5 h-5" />
@@ -322,7 +323,11 @@ const Commandes = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {commandes?.results?.map((commande) => (
-                <tr key={commande.id} className="hover:bg-gray-50">
+                <tr
+                    key={commande.id}
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() => navigate(`/commandes/${commande.id}`)}
+                  >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {commande.numero_commande}
                   </td>
