@@ -28,7 +28,7 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.126']
 
 # Application definition
 
@@ -179,6 +179,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Vite
     "http://localhost:19006", # React Native
     "http://127.0.0.1:5173",  # Important pour Windows
+    "http://192.168.1.105:8081",  # Expo
+    "exp://192.168.1.105:8081",   # Expo
 ]
 
 CORS_ALLOW_CREDENTIALS = True
