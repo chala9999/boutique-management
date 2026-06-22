@@ -20,7 +20,7 @@ class Boutique(models.Model):
     proprietaire = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE, 
-        related_name='boutiques'
+        related_name='boutiques_proprietaire'
     )
     
     # Gestionnaires (employés qui peuvent gérer cette boutique)

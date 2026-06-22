@@ -44,7 +44,11 @@ export const commandesAPI = {
     const response = await axios.get('/fournisseurs/commandes/', { params });
     return response.data;
   },
-
+// Modifier une commande
+update: async (id, data) => {
+  const response = await axios.patch(`/fournisseurs/commandes/${id}/`, data);
+  return response.data;
+},
   // Détails d'une commande
   getById: async (id) => {
     const response = await axios.get(`/fournisseurs/commandes/${id}/`);
@@ -93,4 +97,10 @@ export const commandesAPI = {
     });
     return response.data;
   },
+
+// Commandes d'un fournisseur
+getCommandes: async (id, params) => {
+  const response = await axios.get(`/fournisseurs/fournisseurs/${id}/commandes/`, { params });
+  return response.data;
+},
 };

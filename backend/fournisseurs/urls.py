@@ -4,7 +4,7 @@ from .views import FournisseurViewSet, CommandeViewSet
 
 router = DefaultRouter()
 router.register(r'fournisseurs', FournisseurViewSet, basename='fournisseur')
-router.register(r'commandes', CommandeViewSet, basename='commande')
+router.register(r'commandes', CommandeViewSet, basename='commande')  # Une seule fois
 
 urlpatterns = [
     path('', include(router.urls)),

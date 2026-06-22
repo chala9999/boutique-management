@@ -1,3 +1,15 @@
+# -*- coding: utf-8 -*-
+import sys
+import os
+import locale
+
+# Forcer l'encodage UTF-8 pour stdout/stderr
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+    
+# Définir la locale
+locale.setlocale(locale.LC_ALL, 'fr_FR.UTF-8')
 """
 Django settings for config project.
 

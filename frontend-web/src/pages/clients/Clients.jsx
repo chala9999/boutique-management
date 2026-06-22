@@ -4,11 +4,16 @@ import { clientsAPI } from '../../api/clients';
 import { boutiquesAPI } from '../../api/boutiques';
 import { Plus, Edit, Trash2, Users, Search, Award } from 'lucide-react';
 import ClientModal from '../../components/clients/ClientModal';
+import { Eye, Crown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { usePermissions } from '../../hooks/usePermissions';
 
 const Clients = () => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+  const navigate = useNavigate();
+  const { can } = usePermissions();
   const [filters, setFilters] = useState({
     search: '',
     boutique: '',
@@ -71,21 +76,18 @@ const Clients = () => {
 
   return (
     <div className="space-y-6">
-      {/* En-tête */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
-          <p className="text-gray-600 mt-1">
-            Gérez votre base de clients
-          </p>
+          <p className="text-gray-600 mt-1">Gérez votre base de clients</p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="btn-primary flex items-center space-x-2"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Nouveau Client</span>
-        </button>
+        {/* ✅ Vendeur et admin peuvent créer */}
+        {can.createClient && (
+          <button onClick={() => setIsModalOpen(true)} className="btn-primary flex items-center space-x-2">
+            <Plus className="w-5 h-5" />
+            <span>Nouveau Client</span>
+          </button>
+        )}
       </div>
 
       {/* Filtres */}
@@ -129,19 +131,14 @@ const Clients = () => {
       {clients?.results?.length === 0 ? (
         <div className="card text-center py-12">
           <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Aucun client
-          </h3>
-          <p className="text-gray-600 mb-4">
-            Commencez par ajouter votre premier client
-          </p>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="btn-primary inline-flex items-center space-x-2"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Ajouter un client</span>
-          </button>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun client</h3>
+          <p className="text-gray-600 mb-4">Commencez par ajouter votre premier client</p>
+          {can.createClient && (
+            <button onClick={() => setIsModalOpen(true)} className="btn-primary inline-flex items-center space-x-2">
+              <Plus className="w-5 h-5" />
+              <span>Ajouter un client</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -158,6 +155,12 @@ const Clients = () => {
                     </h3>
                     <p className="text-sm text-gray-600">{client.telephone}</p>
                   </div>
+                                      {client.niveau_info && (
+                      <div className="flex items-center space-x-1 mt-1">
+                        <Crown className="w-3 h-3 text-yellow-500" />
+                        <span className="text-xs text-yellow-600">{client.niveau_info.nom}</span>
+                      </div>
+                    )}
                 </div>
               </div>
 
@@ -191,29 +194,36 @@ const Clients = () => {
 
               <div className="flex items-center space-x-2 mt-4 pt-4 border-t border-gray-200">
                 <button
-                  onClick={() => handleEdit(client)}
+                  onClick={() => navigate(`/clients/${client.id}`)}
                   className="flex-1 btn-secondary flex items-center justify-center space-x-2"
                 >
-                  <Edit className="w-4 h-4" />
-                  <span>Modifier</span>
+                  <Eye className="w-4 h-4" />
+                  <span>Voir</span>
                 </button>
-                <button
-                  onClick={() => handleDelete(client.id)}
-                  className="flex-1 btn-danger flex items-center justify-center space-x-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Supprimer</span>
-                </button>
+                {can.editClient && (
+                  <button
+                    onClick={() => handleEdit(client)}
+                    className="flex-1 btn-secondary flex items-center justify-center space-x-2"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span>Modifier</span>
+                  </button>
+                )}
+                {can.deleteClient && (
+                  <button
+                    onClick={() => handleDelete(client.id)}
+                    className="flex-1 btn-danger flex items-center justify-center space-x-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Supprimer</span>
+                  </button>
+                )}
               </div>
             </div>
           ))}
         </div>
       )}
-
-      {/* Modal */}
-      {isModalOpen && (
-        <ClientModal client={selectedClient} onClose={handleCloseModal} />
-      )}
+      {isModalOpen && <ClientModal client={selectedClient} onClose={handleCloseModal} />}
     </div>
   );
 };

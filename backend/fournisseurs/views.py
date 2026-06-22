@@ -118,26 +118,74 @@ class FournisseurViewSet(viewsets.ModelViewSet):
 
 class CommandeViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
         user = self.request.user
-        
-        # Admin voit toutes les commandes
         if user.role == 'admin':
             return Commande.objects.all()
-        
-        # Les autres voient les commandes de leurs boutiques
         return Commande.objects.filter(
             Q(boutique__proprietaire=user) | Q(boutique__gestionnaires=user)
         ).distinct()
-    
+
     def get_serializer_class(self):
         if self.action == 'list':
             return CommandeListSerializer
         elif self.action == 'create':
             return CreerCommandeSerializer
         return CommandeSerializer
-    
+
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        """Modifier une commande existante"""
+        commande = self.get_object()
+
+        if commande.statut in ['livree', 'annulee']:
+            return Response(
+                {'error': 'Impossible de modifier une commande livrée ou annulée'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        data = request.data
+
+        if 'fournisseur' in data:
+            try:
+                fournisseur = Fournisseur.objects.get(id=data['fournisseur'])
+                commande.fournisseur = fournisseur
+            except Fournisseur.DoesNotExist:
+                return Response({'error': 'Fournisseur introuvable'}, status=status.HTTP_404_NOT_FOUND)
+
+        if 'date_livraison_prevue' in data:
+            commande.date_livraison_prevue = data['date_livraison_prevue'] or None
+        if 'notes' in data:
+            commande.notes = data['notes']
+
+        if 'lignes' in data:
+            if commande.receptions.exists():
+                return Response(
+                    {'error': 'Impossible de modifier les lignes : des réceptions ont déjà été enregistrées'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            commande.lignes.all().delete()
+            for ligne_data in data['lignes']:
+                try:
+                    produit = Produit.objects.get(id=ligne_data['produit'])
+                    LigneCommande.objects.create(
+                        commande=commande,
+                        produit=produit,
+                        prix_unitaire=Decimal(str(ligne_data['prix_unitaire'])),
+                        quantite_commandee=Decimal(str(ligne_data['quantite']))
+                    )
+                except Produit.DoesNotExist:
+                    transaction.set_rollback(True)
+                    return Response({'error': 'Produit introuvable'}, status=status.HTTP_404_NOT_FOUND)
+            commande.save()
+            commande.calculer_totaux()
+        else:
+            commande.save()
+
+        serializer = CommandeSerializer(commande)
+        return Response(serializer.data)
+
     def get_queryset_filtered(self):
         """Filtres personnalisés"""
         queryset = self.get_queryset()
@@ -325,9 +373,11 @@ class CommandeViewSet(viewsets.ModelViewSet):
             )
         
         # Crée le paiement
+        validated_data = serializer.validated_data
+        validated_data.pop('commande', None)  # retire commande si présent
         paiement = PaiementCommande.objects.create(
             commande=commande,
-            **serializer.validated_data
+            **validated_data
         )
         
         # Met à jour la commande
@@ -372,31 +422,26 @@ class CommandeViewSet(viewsets.ModelViewSet):
                     commande=commande
                 )
                 
-                quantite_recue = float(ligne_data['quantite_recue'])
-                
-                # Vérifie qu'on ne dépasse pas la quantité commandée
+                from decimal import Decimal
+
+                quantite_recue = Decimal(str(ligne_data['quantite_recue']))
+
                 if ligne_commande.quantite_recue + quantite_recue > ligne_commande.quantite_commandee:
                     transaction.set_rollback(True)
-                    return Response(
-                        {'error': f'Quantité reçue dépasse la quantité commandée pour {ligne_commande.produit.nom}'},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                
-                # Crée la ligne de réception
+                    return Response(...)
+
                 LigneReception.objects.create(
                     reception=reception,
                     ligne_commande=ligne_commande,
                     quantite_recue=quantite_recue,
                     notes=ligne_data.get('notes', '')
                 )
-                
-                # Met à jour la quantité reçue dans la ligne de commande
+
                 ligne_commande.quantite_recue += quantite_recue
                 ligne_commande.save()
-                
-                # Met à jour le stock du produit
+
                 produit = ligne_commande.produit
-                produit.stock_actuel += quantite_recue
+                produit.stock_actuel += int(quantite_recue)
                 produit.save()
                 
             except LigneCommande.DoesNotExist:
@@ -406,7 +451,6 @@ class CommandeViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_404_NOT_FOUND
                 )
         
-        # Vérifie si toutes les lignes sont complètement reçues
         toutes_recues = all(
             ligne.quantite_recue >= ligne.quantite_commandee 
             for ligne in commande.lignes.all()

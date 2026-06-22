@@ -2,7 +2,18 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './store/authStore';
 import { useEffect } from 'react';
+import { usePermissions } from './hooks/usePermissions';
+import ModifierCommande from './pages/commandes/ModifierCommande';
 
+// Pages
+import DetailProduit from './pages/produits/DetailProduit';
+import Categories from './pages/produits/Categories';
+import DetailCategorie from './pages/produits/DetailCategorie';
+import DetailVente from './pages/ventes/DetailVente';
+import ClientDetail from './pages/clients/ClientDetail';
+import DetailFournisseur from './pages/fournisseurs/DetailFournisseur';
+import Reports from './pages/reports/Reports';
+import ModifierVente from './pages/ventes/ModifierVente';
 // Layouts
 import DashboardLayout from './layouts/DashboardLayout';
 import AuthLayout from './layouts/AuthLayout';
@@ -34,7 +45,7 @@ const queryClient = new QueryClient({
   },
 });
 
-// Protected Route Component
+// Protected Route Component with Permission Check
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuthStore();
 
@@ -51,6 +62,17 @@ const ProtectedRoute = ({ children }) => {
   }
 
   return children;
+};
+
+// Route wrapper with permission
+const RouteWithPermission = ({ element, permission, fallbackPath = '/' }) => {
+  const { can } = usePermissions();
+  
+  if (permission && !can[permission]) {
+    return <Navigate to={fallbackPath} replace />;
+  }
+  
+  return element;
 };
 
 function App() {
@@ -87,9 +109,17 @@ function App() {
             <Route path="/fournisseurs" element={<Fournisseurs />} />
             <Route path="/commandes" element={<Commandes />} />
             <Route path="/users" element={<Users />} />
-            <Route path="/commandes" element={<Commandes />} />
             <Route path="/commandes/nouvelle" element={<NouvelleCommande />} />
             <Route path="/commandes/:id" element={<DetailCommande />} />
+            <Route path="/produits/:id" element={<DetailProduit />} />
+            <Route path="/categories" element={<Categories />} />
+            <Route path="/categories/:id" element={<DetailCategorie />} />
+            <Route path="/ventes/:id" element={<DetailVente />} />
+            <Route path="/clients/:id" element={<ClientDetail />} />
+            <Route path="/fournisseurs/:id" element={<DetailFournisseur />} />
+            <Route path="/rapports" element={<Reports />} />
+            <Route path="/ventes/:id/modifier" element={<ModifierVente />} />
+            <Route path="/commandes/:id/modifier" element={<ModifierCommande />} />
           </Route>
 
           {/* Redirection par défaut */}

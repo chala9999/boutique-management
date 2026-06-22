@@ -4,7 +4,9 @@ import { ventesAPI } from '../../api/ventes';
 import { produitsAPI } from '../../api/produits';
 import { boutiquesAPI } from '../../api/boutiques';
 import { clientsAPI } from '../../api/clients';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { usePermissions } from '../../hooks/usePermissions';
+
 import {
   Search,
   Plus,
@@ -17,6 +19,7 @@ import {
 } from 'lucide-react';
 
 const NouvelleVente = () => {
+  const { can } = usePermissions();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
@@ -28,6 +31,11 @@ const NouvelleVente = () => {
   const [remiseValeur, setRemiseValeur] = useState(0);
   const [modePaiement, setModePaiement] = useState('especes');
   const [montantPaye, setMontantPaye] = useState('');
+
+  // Vérifier l'autorisation
+  if (!can.createVente) {
+    return <Navigate to="/ventes" replace />;
+  }
 
   // Récupérer les boutiques
   const { data: boutiques } = useQuery({
@@ -136,6 +144,13 @@ const NouvelleVente = () => {
       : parseFloat(remiseValeur) || 0;
 
   const montantFinal = montantTotal - montantRemise;
+  
+  // Calcul du bénéfice estimé
+  const beneficeEstime = panier.reduce((acc, item) => {
+    const produit = item.produit_info;
+    const beneficeUnitaire = produit.prix_vente - produit.prix_achat;
+    return acc + (beneficeUnitaire * item.quantite);
+  }, 0);
 
   const montantRendu = Math.max(0, parseFloat(montantPaye) - montantFinal);
 
@@ -517,6 +532,12 @@ const NouvelleVente = () => {
                           <span className="text-gray-600">Monnaie à rendre</span>
                           <span className="font-medium text-gray-900">
                             {montantRendu.toLocaleString()} FCFA
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm pt-2 border-t border-gray-200">
+                          <span className="text-gray-600">Bénéfice estimé</span>
+                          <span className="font-medium text-green-600">
+                            +{beneficeEstime.toLocaleString()} FCFA
                           </span>
                         </div>
                       </>

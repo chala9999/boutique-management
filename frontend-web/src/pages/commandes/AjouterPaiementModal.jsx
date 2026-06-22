@@ -53,6 +53,7 @@ const AjouterPaiementModal = ({ commande, onClose }) => {
     mutation.mutate({
       ...formData,
       montant: montant,
+      commande: commande.id,
     });
   };
 

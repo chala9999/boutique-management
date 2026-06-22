@@ -48,4 +48,15 @@ export const ventesAPI = {
     const response = await axios.get('/ventes/ventes_par_jour/', { params });
     return response.data;
   },
+
+  // Statistiques avancées
+  getStatsAvance: async () => {
+    const response = await axios.get('/ventes/stats_ventes/');
+    return response.data;
+  },
+  // Modifier une vente
+update: async (id, data) => {
+  const response = await axios.patch(`/ventes/${id}/`, data);
+  return response.data;
+},
 };

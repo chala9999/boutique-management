@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { usePermissions } from '../hooks/usePermissions';
 import {
   Store,
   Package,
@@ -12,6 +13,8 @@ import {
   Menu,
   X,
   UserCog,
+  FolderTree,
+  BarChart3,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -19,23 +22,26 @@ const DashboardLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const { can } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const navigation = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Boutiques', href: '/boutiques', icon: Store },
-    { name: 'Produits', href: '/produits', icon: Package },
-    { name: 'Ventes', href: '/ventes', icon: ShoppingCart },
-    { name: 'Clients', href: '/clients', icon: Users },
-    { name: 'Fournisseurs', href: '/fournisseurs', icon: Truck },
-    { name: 'Commandes', href: '/commandes', icon: FileText },
-    { name: 'Users', href: '/users', icon: UserCog },
-  ];
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
+
+  const menuItems = [
+    { name: 'Dashboard', href: '/', icon: LayoutDashboard, show: true },
+    { name: 'Boutiques', href: '/boutiques', icon: Store, show: can.viewBoutiques },
+    { name: 'Catégories', href: '/categories', icon: FolderTree, show: can.viewCategories },
+    { name: 'Produits', href: '/produits', icon: Package, show: can.viewProduits },
+    { name: 'Clients', href: '/clients', icon: Users, show: can.viewClients },
+    { name: 'Ventes', href: '/ventes', icon: ShoppingCart, show: can.viewVentes },
+    { name: 'Fournisseurs', href: '/fournisseurs', icon: Truck, show: can.viewFournisseurs },
+    { name: 'Commandes', href: '/commandes', icon: FileText, show: can.viewCommandes },
+    { name: 'Utilisateurs', href: '/users', icon: UserCog, show: can.viewUsers },
+    { name: 'Rapports', href: '/rapports', icon: BarChart3, show: can.viewReports },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -74,7 +80,7 @@ const DashboardLayout = () => {
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-            {navigation.map((item) => {
+            {menuItems.filter(item => item.show).map((item) => {
               const isActive = location.pathname === item.href;
               return (
                 <Link

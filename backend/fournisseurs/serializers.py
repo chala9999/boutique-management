@@ -31,7 +31,8 @@ class FournisseurListSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Fournisseur
-        fields = ['id', 'nom', 'entreprise', 'telephone', 'email', 
+        fields = ['id', 'nom', 'entreprise', 'telephone', 'telephone2',
+            'adresse', 'ville', 'numero_compte', 'banque', 'notes', 'boutique', 'pays', 'email',  
                   'is_active', 'nombre_commandes']
 
 

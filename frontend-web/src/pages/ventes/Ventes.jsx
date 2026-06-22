@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ventesAPI } from '../../api/ventes';
 import { boutiquesAPI } from '../../api/boutiques';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { usePermissions } from '../../hooks/usePermissions';
+import { Edit } from 'lucide-react';
+
+
 import {
   Plus,
   Eye,
   Search,
-  Calendar,
   ShoppingCart,
   TrendingUp,
   DollarSign,
@@ -16,6 +19,8 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const Ventes = () => {
+  const { can, isComptable } = usePermissions();
+  const navigate = useNavigate();
   const [filters, setFilters] = useState({
     search: '',
     boutique: '',
@@ -104,11 +109,21 @@ const Ventes = () => {
             Gérez et suivez vos ventes
           </p>
         </div>
-        <Link to="/ventes/nouvelle" className="btn-primary flex items-center space-x-2">
-          <Plus className="w-5 h-5" />
-          <span>Nouvelle Vente</span>
-        </Link>
+        {can.createVente && (
+          <Link to="/ventes/nouvelle" className="btn-primary flex items-center space-x-2">
+            <Plus className="w-5 h-5" />
+            <span>Nouvelle Vente</span>
+          </Link>
+        )}
       </div>
+
+      {/* Si comptable, afficher un message d'information */}
+      {isComptable && (
+        <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700">
+          <Eye className="w-4 h-4 inline mr-1" />
+          Mode consultation uniquement - Vous ne pouvez pas créer ou modifier des ventes
+        </div>
+      )}
 
       {/* Statistiques du jour */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -243,10 +258,12 @@ const Ventes = () => {
           <p className="text-gray-600 mb-4">
             Commencez par créer votre première vente
           </p>
-          <Link to="/ventes/nouvelle" className="btn-primary inline-flex items-center space-x-2">
-            <Plus className="w-5 h-5" />
-            <span>Nouvelle vente</span>
-          </Link>
+          {can.createVente && (
+            <Link to="/ventes/nouvelle" className="btn-primary inline-flex items-center space-x-2">
+              <Plus className="w-5 h-5" />
+              <span>Nouvelle vente</span>
+            </Link>
+          )}
         </div>
       ) : (
         <div className="card overflow-x-auto">
@@ -306,9 +323,22 @@ const Ventes = () => {
                     {getPaiementBadge(vente.statut_paiement)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button className="text-primary-600 hover:text-primary-900">
+                    <button
+                      onClick={() => navigate(`/ventes/${vente.id}`)}
+                      className="text-primary-600 hover:text-primary-900"
+                      title="Voir détails"
+                    >
                       <Eye className="w-5 h-5" />
                     </button>
+                    {can.editVente && (
+  <button
+    onClick={() => navigate(`/ventes/${vente.id}/modifier`)}
+    className="text-primary-600 hover:text-primary-900"
+    title="Modifier"
+  >
+    <Edit className="w-5 h-5" />
+  </button>
+)}
                   </td>
                 </tr>
               ))}

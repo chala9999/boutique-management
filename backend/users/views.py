@@ -186,3 +186,51 @@ class UserViewSet(viewsets.ModelViewSet):
         user.save()
         
         return Response({'message': 'Mot de passe modifié avec succès'})
+
+    @action(detail=False, methods=['get'])
+    def permissions(self, request):
+        """Récupère les permissions de l'utilisateur connecté"""
+        user = request.user
+        
+        permissions = {
+            'isAdmin': user.role == 'admin',
+            'isVendeur': user.role == 'vendeur',
+            'isComptable': user.role == 'comptable',
+            'can': {
+                'manageUsers': user.role == 'admin',
+                'viewUsers': user.role == 'admin',
+                'createUser': user.role == 'admin',
+                'editUser': user.role == 'admin',
+                'deleteUser': user.role == 'admin',
+                'manageBoutiques': user.role == 'admin',
+                'viewBoutiques': user.role in ['admin', 'vendeur'],
+                'createBoutique': user.role == 'admin',
+                'editBoutique': user.role == 'admin',
+                'deleteBoutique': user.role == 'admin',
+                'manageProduits': user.role in ['admin', 'vendeur'],
+                'viewProduits': user.role in ['admin', 'vendeur'],
+                'createProduit': user.role in ['admin', 'vendeur'],
+                'editProduit': user.role in ['admin', 'vendeur'],
+                'deleteProduit': user.role in ['admin', 'vendeur'],
+                'manageCategories': user.role in ['admin', 'vendeur'],
+                'viewCategories': user.role in ['admin', 'vendeur'],
+                'createVente': user.role in ['admin', 'vendeur'],
+                'viewVentes': user.role in ['admin', 'vendeur', 'comptable'],
+                'viewAllVentes': user.role in ['admin', 'comptable'],
+                'cancelVente': user.role in ['admin', 'vendeur'],
+                'manageClients': user.role in ['admin', 'vendeur'],
+                'viewClients': user.role in ['admin', 'vendeur'],
+                'manageFournisseurs': user.role in ['admin', 'vendeur'],
+                'viewFournisseurs': user.role in ['admin', 'vendeur'],
+                'manageCommandes': user.role in ['admin', 'vendeur'],
+                'viewCommandes': user.role in ['admin', 'vendeur'],
+                'viewReports': user.role in ['admin', 'comptable'],
+                'exportReports': user.role in ['admin', 'comptable'],
+                'viewVendeurPerformance': user.role == 'admin',
+                'viewDashboard': True,
+                'viewStatsFinancieres': user.role in ['admin', 'comptable'],
+                'viewAlertesStock': user.role in ['admin', 'vendeur'],
+            }
+        }
+        
+        return Response(permissions)

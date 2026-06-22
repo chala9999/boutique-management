@@ -6,6 +6,10 @@ export const boutiquesAPI = {
     const response = await axios.get('/boutiques/', { params });
     return response.data;
   },
+  toggleActive: async (id) => {
+  const response = await axios.post(`/boutiques/${id}/toggle_active/`);
+  return response.data;
+  },
 
   // Détails d'une boutique
   getById: async (id) => {
@@ -40,6 +44,16 @@ export const boutiquesAPI = {
   // Statistiques d'une boutique
   getStatistiques: async (id) => {
     const response = await axios.get(`/boutiques/${id}/statistiques/`);
+    return response.data;
+  },
+
+  // Uploader un logo pour une boutique
+  uploadLogo: async (id, formData) => {
+    const response = await axios.post(`/boutiques/${id}/upload-logo/`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 };

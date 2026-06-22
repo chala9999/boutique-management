@@ -2,27 +2,35 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { produitsAPI } from '../../api/produits';
 import { boutiquesAPI } from '../../api/boutiques';
+import { useNavigate } from 'react-router-dom';
+import { usePermissions } from '../../hooks/usePermissions';
+import ConfirmModal from '../../components/ui/ConfirmModal';
+
 import {
   Plus,
   Edit,
   Trash2,
   Package,
   Search,
-  Filter,
   AlertTriangle,
+  Eye,
+  Ban,
+  CheckCircle,
 } from 'lucide-react';
 import ProduitModal from '../../components/produits/ProduitModal';
 
 const Produits = () => {
+  const { can } = usePermissions();
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduit, setSelectedProduit] = useState(null);
+  const navigate = useNavigate();
   const [filters, setFilters] = useState({
     search: '',
     boutique: '',
     categorie: '',
     stock_faible: false,
-    actifs: true,
+    actifs: 'tous',
   });
 
   // Récupérer les produits
@@ -55,10 +63,43 @@ const Produits = () => {
     },
   });
 
-  const handleEdit = (produit) => {
-    setSelectedProduit(produit);
+  const handleEdit = async (produit) => {
+  try {
+    const detail = await produitsAPI.getById(produit.id);
+    setSelectedProduit(detail);
     setIsModalOpen(true);
-  };
+  } catch (error) {
+    alert('Erreur lors du chargement du produit');
+  }
+};
+// Ajoute cet état en haut
+const [confirmModal, setConfirmModal] = useState({
+  isOpen: false,
+  produitId: null,
+  nom: '',
+  action: ''
+});
+
+// Mutation toggle
+const toggleActiveMutation = useMutation({
+  mutationFn: (id) => produitsAPI.toggleActive(id),
+  onSuccess: () => {
+    queryClient.invalidateQueries(['produits']);
+  },
+  onError: (error) => {
+    alert(error.response?.data?.error || 'Erreur lors du changement de statut');
+  },
+});
+
+// Handler
+const handleToggleActive = (id, nom, action) => {
+  setConfirmModal({ isOpen: true, produitId: id, nom, action });
+};
+
+const confirmToggle = () => {
+  toggleActiveMutation.mutate(confirmModal.produitId);
+  setConfirmModal({ isOpen: false, produitId: null, nom: '', action: '' });
+};
 
   const handleDelete = (id) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) {
@@ -97,13 +138,15 @@ const Produits = () => {
             Gérez votre catalogue de produits
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="btn-primary flex items-center space-x-2"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Nouveau Produit</span>
-        </button>
+        {can.createProduit && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="btn-primary flex items-center space-x-2"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Nouveau Produit</span>
+          </button>
+        )}
       </div>
 
       {/* Filtres */}
@@ -157,7 +200,19 @@ const Produits = () => {
               ))}
             </select>
           </div>
-
+           <div>
+  <label className="label">Statut</label>
+  <select
+    name="actifs"
+    value={filters.actifs}
+    onChange={handleFilterChange}
+    className="input"
+  >
+    <option value="tous">Tous</option>
+    <option value="true">Actifs</option>
+    <option value="false">Inactifs</option>
+  </select>
+</div>
           <div className="flex items-end space-x-2">
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
@@ -183,13 +238,15 @@ const Produits = () => {
           <p className="text-gray-600 mb-4">
             Commencez par ajouter votre premier produit
           </p>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="btn-primary inline-flex items-center space-x-2"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Ajouter un produit</span>
-          </button>
+          {can.createProduit && (
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="btn-primary inline-flex items-center space-x-2"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Ajouter un produit</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="card overflow-x-auto">
@@ -270,17 +327,33 @@ const Produits = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <div className="flex items-center space-x-2">
                       <button
-                        onClick={() => handleEdit(produit)}
-                        className="text-primary-600 hover:text-primary-900"
+                        onClick={() => navigate(`/produits/${produit.id}`)}
+                        className="text-gray-600 hover:text-gray-900"
+                        title="Voir le produit"
                       >
-                        <Edit className="w-5 h-5" />
+                        <Eye className="w-5 h-5" />
                       </button>
-                      <button
-                        onClick={() => handleDelete(produit.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                      {can.editProduit && (
+                        <button
+                          onClick={() => handleEdit(produit)}
+                          className="text-primary-600 hover:text-primary-900"
+                        >
+                          <Edit className="w-5 h-5" />
+                        </button>
+                      )}
+                      {can.toggleProduit && (
+                          <button
+                            onClick={() => handleToggleActive(
+                              produit.id,
+                              produit.nom,
+                              produit.is_active ? 'desactiver' : 'activer'
+                            )}
+                            className={produit.is_active ? 'text-orange-500 hover:text-orange-700' : 'text-green-600 hover:text-green-800'}
+                            title={produit.is_active ? 'Désactiver' : 'Activer'}
+                          >
+                            {produit.is_active ? <Ban className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
+                          </button>
+                        )}
                     </div>
                   </td>
                 </tr>
@@ -289,7 +362,15 @@ const Produits = () => {
           </table>
         </div>
       )}
-
+<ConfirmModal
+  isOpen={confirmModal.isOpen}
+  onClose={() => setConfirmModal({ isOpen: false, produitId: null, nom: '', action: '' })}
+  onConfirm={confirmToggle}
+  title={`${confirmModal.action === 'activer' ? 'Activer' : 'Désactiver'} le produit`}
+  message={`Êtes-vous sûr de vouloir ${confirmModal.action} le produit "${confirmModal.nom}" ?`}
+  confirmText={confirmModal.action === 'activer' ? 'Activer' : 'Désactiver'}
+  confirmVariant={confirmModal.action === 'activer' ? 'primary' : 'warning'}
+/>
       {/* Modal */}
       {isModalOpen && (
         <ProduitModal produit={selectedProduit} onClose={handleCloseModal} />

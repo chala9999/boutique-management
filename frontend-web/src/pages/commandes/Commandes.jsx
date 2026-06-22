@@ -8,10 +8,12 @@ import { Plus, Eye, Search, FileText, Package } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
+import { usePermissions } from '../../hooks/usePermissions';
 
 const Commandes = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { can } = usePermissions();
   const [filters, setFilters] = useState({
     search: '',
     boutique: '',
@@ -115,13 +117,15 @@ const Commandes = () => {
             Gérez vos commandes et réapprovisionnements
           </p>
         </div>
-        <button
-          onClick={() => navigate('/commandes/nouvelle')}
-          className="btn-primary flex items-center space-x-2"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Nouvelle Commande</span>
-        </button>
+        {can.createCommande && (
+            <button
+              onClick={() => navigate('/commandes/nouvelle')}
+              className="btn-primary flex items-center space-x-2"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Nouvelle Commande</span>
+            </button>
+          )}
       </div>
 
       {/* Statistiques */}
@@ -279,13 +283,15 @@ const Commandes = () => {
           <p className="text-gray-600 mb-4">
             Commencez par créer votre première commande
           </p>
-          <button
-            onClick={() => navigate('/commandes/nouvelle')}
-            className="btn-primary inline-flex items-center space-x-2"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Nouvelle commande</span>
-          </button>
+          {can.createCommande && (
+              <button
+                onClick={() => navigate('/commandes/nouvelle')}
+                className="btn-primary inline-flex items-center space-x-2"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Nouvelle commande</span>
+              </button>
+            )}
         </div>
       ) : (
         <div className="card overflow-x-auto">

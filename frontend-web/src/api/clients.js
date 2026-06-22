@@ -42,4 +42,36 @@ export const clientsAPI = {
     const response = await axios.get(`/clients/${id}/statistiques/`);
     return response.data;
   },
+
+// Niveaux de fidélité
+getNiveauxFidelite: async () => {
+  const response = await axios.get('/clients/niveaux_fidelite/');
+  return response.data;
+},
+
+// Récompenses
+getRecompenses: async (params) => {
+  const response = await axios.get('/clients/recompenses/', { params });
+  return response.data;
+},
+
+// Échanger une récompense
+echangerRecompense: async (clientId, recompenseId) => {
+  const response = await axios.post(`/clients/${clientId}/echanger_recompense/`, {
+    recompense_id: recompenseId
+  });
+  return response.data;
+},
+
+// Historique des récompenses
+getHistoriqueRecompenses: async (clientId) => {
+  const response = await axios.get(`/clients/${clientId}/historique_recompenses/`);
+  return response.data;
+},
+
+// Top clients
+getTopClients: async (by = 'points') => {
+  const response = await axios.get('/clients/top_clients/', { params: { by } });
+  return response.data;
+},
 };

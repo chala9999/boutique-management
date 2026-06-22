@@ -57,6 +57,7 @@ const ClientModal = ({ client, onClose }) => {
       notes: client.notes || '',
     });
   } else {
+    // ✅ Réinitialisation complète
     setFormData({
       nom: '',
       prenom: '',
@@ -70,8 +71,7 @@ const ClientModal = ({ client, onClose }) => {
       notes: '',
     });
   }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
+}, [client]);
 
   const mutation = useMutation({
     mutationFn: (data) =>

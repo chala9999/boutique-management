@@ -13,6 +13,7 @@ class User(AbstractUser):
     photo = models.ImageField(upload_to='users/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    boutiques = models.ManyToManyField('boutiques.Boutique', blank=True,related_name='utilisateurs')
     
     class Meta:
         verbose_name = 'Utilisateur'

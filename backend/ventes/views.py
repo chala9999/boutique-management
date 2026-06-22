@@ -18,6 +18,41 @@ from produits.models import Produit
 from boutiques.models import Boutique
 from clients.models import Client
 
+from core.permissions import IsVendeur, IsComptable, IsAdminOrComptable, CanCreateVente
+
+class VenteViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        if self.action == 'create':
+            self.permission_classes = [IsAuthenticated, CanCreateVente]
+        elif self.action in ['list', 'retrieve', 'statistiques', 'ventes_par_jour']:
+            # Comptables et admins peuvent voir
+            self.permission_classes = [IsAuthenticated, IsAdminOrComptable]
+        else:
+            self.permission_classes = [IsAuthenticated, IsVendeur]
+        return super().get_permissions()
+    
+    def get_queryset(self):
+        user = self.request.user
+        
+        # Admin voit tout
+        if user.role == 'admin':
+            return Vente.objects.all()
+        
+        # Comptable voit toutes les ventes des boutiques (lecture seule)
+        if user.role == 'comptable':
+            return Vente.objects.filter(
+                Q(boutique__proprietaire=user) | Q(boutique__gestionnaires=user)
+            ).distinct()
+        
+        # Vendeur voit ses propres ventes et celles de ses boutiques
+        return Vente.objects.filter(
+            Q(vendeur=user) | 
+            Q(boutique__proprietaire=user) | 
+            Q(boutique__gestionnaires=user)
+        ).distinct()
+
 class VenteViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     
@@ -365,3 +400,160 @@ class VenteViewSet(viewsets.ModelViewSet):
         ).order_by('jour')
         
         return Response(list(ventes_par_jour))
+
+
+@action(detail=True, methods=['get'])
+def get_vente_details(self, request, pk=None):
+    """Récupère toutes les infos d'une vente avec calculs"""
+    vente = self.get_object()
+    serializer = VenteSerializer(vente)
+    return Response(serializer.data)
+
+@action(detail=False, methods=['get'])
+def ventes_par_jour(self, request):
+    """Ventes groupées par jour (pour graphiques)"""
+    queryset = self.get_queryset_filtered().filter(statut='completee')
+    
+    jours = int(request.query_params.get('jours', 30))
+    date_debut = timezone.now().date() - timedelta(days=jours)
+    
+    queryset = queryset.filter(date_vente__date__gte=date_debut)
+    
+    from django.db.models.functions import TruncDate
+    ventes_par_jour = queryset.annotate(
+        jour=TruncDate('date_vente')
+    ).values('jour').annotate(
+        nombre_ventes=Count('id'),
+        total=Sum('montant_final')
+    ).order_by('jour')
+    
+    return Response(list(ventes_par_jour))
+
+@action(detail=False, methods=['get'])
+def stats_ventes(self, request):
+    """Statistiques avancées des ventes"""
+    queryset = self.get_queryset().filter(statut='completee')
+    
+    # Périodes
+    today = timezone.now().date()
+    first_day_month = today.replace(day=1)
+    
+    # Stats du mois
+    ventes_mois = queryset.filter(date_vente__date__gte=first_day_month)
+    
+    # Stats d'aujourd'hui
+    ventes_jour = queryset.filter(date_vente__date=today)
+    
+    # Stats des 30 derniers jours
+    date_30j = today - timedelta(days=30)
+    ventes_30j = queryset.filter(date_vente__date__gte=date_30j)
+    
+    # Calculs
+    stats = {
+        'aujourd_hui': {
+            'nombre': ventes_jour.count(),
+            'ca': ventes_jour.aggregate(total=Sum('montant_final'))['total'] or 0,
+            'benefice': sum(v.benefice_total for v in ventes_jour)
+        },
+        'mois': {
+            'nombre': ventes_mois.count(),
+            'ca': ventes_mois.aggregate(total=Sum('montant_final'))['total'] or 0,
+        },
+        '30_jours': {
+            'nombre': ventes_30j.count(),
+            'ca': ventes_30j.aggregate(total=Sum('montant_final'))['total'] or 0,
+        },
+        'impayes': {
+            'nombre': self.get_queryset().filter(statut_paiement__in=['impaye', 'partiel']).count(),
+            'montant': self.get_queryset().filter(statut_paiement__in=['impaye', 'partiel']).aggregate(total=Sum('montant_restant'))['total'] or 0,
+        }
+    }
+    
+    return Response(stats)
+
+@transaction.atomic
+def update(self, request, *args, **kwargs):
+    """Modifier une vente existante"""
+    partial = kwargs.pop('partial', False)
+    vente = self.get_object()
+    
+    # Impossible de modifier une vente annulée
+    if vente.statut == 'annulee':
+        return Response(
+            {'error': 'Impossible de modifier une vente annulée'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    data = request.data
+    
+    # Modifier les champs simples
+    if 'client' in data:
+        client = None
+        if data['client']:
+            try:
+                client = Client.objects.get(id=data['client'])
+            except Client.DoesNotExist:
+                return Response({'error': 'Client introuvable'}, status=status.HTTP_404_NOT_FOUND)
+        vente.client = client
+    
+    if 'mode_paiement' in data:
+        vente.mode_paiement = data['mode_paiement']
+    if 'remise_type' in data:
+        vente.remise_type = data['remise_type']
+    if 'remise_valeur' in data:
+        vente.remise_valeur = data['remise_valeur']
+    if 'montant_paye' in data:
+        vente.montant_paye = data['montant_paye']
+    if 'notes' in data:
+        vente.notes = data['notes']
+    
+    # Modifier les lignes si fournies
+    if 'lignes' in data:
+        # 1. Restaurer le stock des anciennes lignes
+        for ligne in vente.lignes.all():
+            produit = ligne.produit
+            produit.stock_actuel += float(ligne.quantite)
+            produit.save()
+        
+        # 2. Supprimer les anciennes lignes
+        vente.lignes.all().delete()
+        
+        # 3. Créer les nouvelles lignes
+        for ligne_data in data['lignes']:
+            try:
+                produit = Produit.objects.get(id=ligne_data['produit'])
+                quantite = float(ligne_data['quantite'])
+                
+                # Vérifier le stock
+                if produit.stock_actuel < quantite:
+                    transaction.set_rollback(True)
+                    return Response(
+                        {'error': f'Stock insuffisant pour {produit.nom}. Disponible: {produit.stock_actuel}'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                LigneVente.objects.create(
+                    vente=vente,
+                    produit=produit,
+                    prix_unitaire=ligne_data.get('prix_unitaire', produit.prix_vente),
+                    prix_achat_unitaire=produit.prix_achat,
+                    quantite=quantite,
+                    remise_pourcentage=ligne_data.get('remise_pourcentage', 0)
+                )
+                
+                # Déduire le nouveau stock
+                produit.stock_actuel -= quantite
+                produit.save()
+                
+            except Produit.DoesNotExist:
+                transaction.set_rollback(True)
+                return Response(
+                    {'error': f'Produit introuvable'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+    
+    vente.save()
+    vente.calculer_totaux()
+    
+    serializer = VenteSerializer(vente)
+    return Response(serializer.data)

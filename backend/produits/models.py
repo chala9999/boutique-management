@@ -72,6 +72,12 @@ class Produit(models.Model):
     # Dates
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    def save(self, *args, **kwargs):
+        if not self.code_barre:
+            # Générer un code barre unique
+            import uuid
+            self.code_barre = str(uuid.uuid4())[:8]
+        super().save(*args, **kwargs)
     
     class Meta:
         verbose_name = 'Produit'
