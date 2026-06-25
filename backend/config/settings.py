@@ -40,7 +40,7 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 DEBUG = True
 
 ALLOWED_HOSTS = []
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.126']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.137.1']
 
 # Application definition
 
@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'ventes',
     'clients',
     'fournisseurs',
+    'depenses',
     
     # Django apps
     'django.contrib.admin',

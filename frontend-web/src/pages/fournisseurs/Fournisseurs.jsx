@@ -10,6 +10,7 @@ import { usePermissions } from '../../hooks/usePermissions'; // ✅ ajoute
 
 const Fournisseurs = () => {
   const queryClient = useQueryClient();
+  const { isComptable } = usePermissions();
   const { can } = usePermissions(); // ✅ ajoute
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFournisseur, setSelectedFournisseur] = useState(null);
@@ -28,6 +29,7 @@ const Fournisseurs = () => {
   const { data: boutiques } = useQuery({
     queryKey: ['boutiques'],
     queryFn: () => boutiquesAPI.getAll(),
+    enabled: !isComptable,
   });
 
   const deleteMutation = useMutation({
@@ -110,6 +112,8 @@ const Fournisseurs = () => {
               />
             </div>
           </div>
+
+          {!isComptable && (
           <div>
             <label className="label">Boutique</label>
             <select
@@ -126,6 +130,7 @@ const Fournisseurs = () => {
               ))}
             </select>
           </div>
+          )}
           <div className="flex items-end">
             <label className="flex items-center space-x-2 cursor-pointer">
               <input

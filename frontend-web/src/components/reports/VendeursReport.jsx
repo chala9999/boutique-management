@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { reportsAPI } from '../../api/reports';
 import { boutiquesAPI } from '../../api/boutiques';
+import { usePermissions } from '../../hooks/usePermissions';
+
 import {
   Users,
   TrendingUp,
@@ -13,6 +15,7 @@ import {
   Filter,
   RefreshCw,
   Crown,
+  Download,
 } from 'lucide-react';
 import {
   BarChart,
@@ -31,6 +34,7 @@ import {
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#06B6D4', '#EC4899', '#6366F1'];
 
 const VendeursReport = () => {
+  const { isComptable } = usePermissions();
   const [filters, setFilters] = useState({
     periode: 'mois',
     boutique: '',
@@ -55,6 +59,7 @@ const VendeursReport = () => {
   const { data: boutiques } = useQuery({
     queryKey: ['boutiques'],
     queryFn: () => boutiquesAPI.getAll(),
+    enabled: !isComptable,
   });
 
   const { data: report, isLoading, refetch } = useQuery({
@@ -89,6 +94,16 @@ const VendeursReport = () => {
   return (
     <div className="space-y-6">
       {/* Filtres */}
+       <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-gray-900">Performance des vendeurs</h2>
+        <button
+          onClick={handleExportExcel}
+          className="btn-secondary flex items-center space-x-2"
+        >
+          <Download className="w-4 h-4" />
+          <span>Exporter Excel</span>
+        </button>
+      </div>
       <div className="card">
         <div className="flex flex-wrap gap-4 items-end">
           <div>

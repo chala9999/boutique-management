@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePermissions } from '../../hooks/usePermissions';
 import {
   BarChart3,
   TrendingUp,
@@ -6,8 +7,6 @@ import {
   DollarSign,
   Users,
   Download,
-  Calendar,
-  Filter,
 } from 'lucide-react';
 import VentesReport from '../../components/reports/VentesReport';
 import StockReport from '../../components/reports/StockReport';
@@ -15,19 +14,15 @@ import FinancesReport from '../../components/reports/FinancesReport';
 import VendeursReport from '../../components/reports/VendeursReport';
 
 const Reports = () => {
+  const { can } = usePermissions();
   const [activeTab, setActiveTab] = useState('ventes');
 
   const tabs = [
-    { id: 'ventes', name: 'Rapport des ventes', icon: TrendingUp },
-    { id: 'stock', name: 'Rapport des stocks', icon: Package },
-    { id: 'finances', name: 'Rapport financier', icon: DollarSign },
-    { id: 'vendeurs', name: 'Performance vendeurs', icon: Users },
-  ];
-
-  const handleExport = (type) => {
-    // TODO: Implémenter l'export PDF/Excel
-    alert(`Export ${type} en cours de développement...`);
-  };
+    { id: 'ventes', name: 'Rapport des ventes', icon: TrendingUp, show: true },
+    { id: 'stock', name: 'Rapport des stocks', icon: Package, show: true },
+    { id: 'finances', name: 'Rapport financier', icon: DollarSign, show: can.viewStatsFinancieres },
+    { id: 'vendeurs', name: 'Performance vendeurs', icon: Users, show: can.viewVendeurPerformance },
+  ].filter(tab => tab.show);
 
   return (
     <div className="space-y-6">
@@ -39,13 +34,6 @@ const Reports = () => {
             Analysez vos performances et suivez l'évolution de votre activité
           </p>
         </div>
-        <button
-          onClick={() => handleExport(activeTab)}
-          className="btn-secondary flex items-center space-x-2"
-        >
-          <Download className="w-5 h-5" />
-          <span>Exporter</span>
-        </button>
       </div>
 
       {/* Onglets */}

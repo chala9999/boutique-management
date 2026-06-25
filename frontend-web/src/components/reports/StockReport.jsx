@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { reportsAPI } from '../../api/reports';
 import { boutiquesAPI } from '../../api/boutiques';
+import { usePermissions } from '../../hooks/usePermissions';
+
 import {
   Package,
   AlertTriangle,
@@ -9,6 +11,7 @@ import {
   TrendingUp,
   Filter,
   RefreshCw,
+  Download,
 } from 'lucide-react';
 import {
   BarChart,
@@ -21,6 +24,7 @@ import {
 } from 'recharts';
 
 const StockReport = () => {
+  const { isComptable } = usePermissions();
   const [filters, setFilters] = useState({
     boutique: '',
   });
@@ -28,6 +32,7 @@ const StockReport = () => {
   const { data: boutiques } = useQuery({
     queryKey: ['boutiques'],
     queryFn: () => boutiquesAPI.getAll(),
+    enabled: !isComptable,
   });
   const handleExportExcel = async () => {
   try {
@@ -65,6 +70,17 @@ const StockReport = () => {
 
   return (
     <div className="space-y-6">
+      {/* ✅ En-tête avec bouton d'export */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-gray-900">Rapport des stocks</h2>
+        <button
+          onClick={handleExportExcel}
+          className="btn-secondary flex items-center space-x-2"
+        >
+          <Download className="w-4 h-4" />
+          <span>Exporter Excel</span>
+        </button>
+      </div>
       {/* Filtres */}
       <div className="card">
         <div className="flex flex-wrap gap-4 items-end">

@@ -16,6 +16,7 @@ export const usePermissions = () => {
     editUser: isAdmin,
     deleteUser: isAdmin,
     changeUserPassword: isAdmin,
+    ajouterPaiementVente: isVendeur || isAdmin,
     
     // Boutiques — vendeur voit seulement
     manageBoutiques: isAdmin,
@@ -69,6 +70,12 @@ export const usePermissions = () => {
     // Dashboard
     viewDashboard: true,
     viewAlertesStock: isVendeur || isAdmin,
+
+    // Dépenses — tout le monde peut créer, admin peut supprimer celles des autres
+    viewDepenses: true,
+    createDepense: true,
+    editDepense: true,
+    deleteDepense: isAdmin,
   };
   
   return { user, isAdmin, isVendeur, isComptable, isAuthenticated, can };

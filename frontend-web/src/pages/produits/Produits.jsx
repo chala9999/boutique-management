@@ -22,6 +22,7 @@ import ProduitModal from '../../components/produits/ProduitModal';
 const Produits = () => {
   const { can } = usePermissions();
   const queryClient = useQueryClient();
+  const { isComptable } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduit, setSelectedProduit] = useState(null);
   const navigate = useNavigate();
@@ -43,6 +44,7 @@ const Produits = () => {
   const { data: boutiques } = useQuery({
     queryKey: ['boutiques'],
     queryFn: () => boutiquesAPI.getAll(),
+    enabled: !isComptable,
   });
 
   // Récupérer les catégories
@@ -166,7 +168,8 @@ const confirmToggle = () => {
               />
             </div>
           </div>
-
+ 
+          {!isComptable && ( 
           <div>
             <label className="label">Boutique</label>
             <select
@@ -183,7 +186,7 @@ const confirmToggle = () => {
               ))}
             </select>
           </div>
-
+         )}
           <div>
             <label className="label">Catégorie</label>
             <select

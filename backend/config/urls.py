@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -12,6 +13,8 @@ urlpatterns = [
     path('api/ventes/', include('ventes.urls')),
     path('api/fournisseurs/', include('fournisseurs.urls')),
     path('api/rapports/', include('rapports.urls')),
+    path('api/users/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/depenses/', include('depenses.urls')),
 ]
 
 # Serve media files in development

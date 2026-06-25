@@ -15,6 +15,7 @@ import {
   UserCog,
   FolderTree,
   BarChart3,
+  Receipt,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -39,6 +40,7 @@ const DashboardLayout = () => {
     { name: 'Ventes', href: '/ventes', icon: ShoppingCart, show: can.viewVentes },
     { name: 'Fournisseurs', href: '/fournisseurs', icon: Truck, show: can.viewFournisseurs },
     { name: 'Commandes', href: '/commandes', icon: FileText, show: can.viewCommandes },
+    { name: 'Dépenses', href: '/depenses', icon: Receipt, show: true },
     { name: 'Utilisateurs', href: '/users', icon: UserCog, show: can.viewUsers },
     { name: 'Rapports', href: '/rapports', icon: BarChart3, show: can.viewReports },
   ];
@@ -63,13 +65,15 @@ const DashboardLayout = () => {
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
-                <Store className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">
-                Boutique
-              </span>
-            </div>
+            <img
+              src="/logo.jpeg"
+              alt="Logo"
+              className="w-10 h-10 object-contain rounded-lg"
+            />
+            <span className="text-xl font-bold text-gray-900">
+              Boutique
+            </span>
+          </div>
             <button
               onClick={() => setSidebarOpen(false)}
               className="lg:hidden"

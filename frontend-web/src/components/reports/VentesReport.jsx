@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { reportsAPI } from '../../api/reports';
 import { boutiquesAPI } from '../../api/boutiques';
+import { usePermissions } from '../../hooks/usePermissions';
+
 import {
   TrendingUp,
   ShoppingCart,
@@ -9,6 +11,7 @@ import {
   Calendar,
   Filter,
   RefreshCw,
+  Download,
 } from 'lucide-react';
 import {
   LineChart,
@@ -29,6 +32,7 @@ import {
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444'];
 
 const VentesReport = () => {
+  const { isComptable } = usePermissions();
   const [filters, setFilters] = useState({
     periode: 'mois',
     date_debut: '',
@@ -40,6 +44,7 @@ const VentesReport = () => {
   const { data: boutiques } = useQuery({
     queryKey: ['boutiques'],
     queryFn: () => boutiquesAPI.getAll(),
+    enabled: !isComptable,
   });
 
   const { data: report, isLoading, refetch } = useQuery({
@@ -85,6 +90,16 @@ const VentesReport = () => {
 
   return (
     <div className="space-y-6">
+       <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-gray-900">Rapport des ventes</h2>
+        <button
+          onClick={handleExportExcel}
+          className="btn-secondary flex items-center space-x-2"
+        >
+          <Download className="w-4 h-4" />
+          <span>Exporter Excel</span>
+        </button>
+      </div>
       {/* Filtres */}
       <div className="card">
     

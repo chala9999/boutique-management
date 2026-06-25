@@ -14,6 +14,7 @@ import ClientDetail from './pages/clients/ClientDetail';
 import DetailFournisseur from './pages/fournisseurs/DetailFournisseur';
 import Reports from './pages/reports/Reports';
 import ModifierVente from './pages/ventes/ModifierVente';
+import Depenses from './pages/depenses/Depenses';
 // Layouts
 import DashboardLayout from './layouts/DashboardLayout';
 import AuthLayout from './layouts/AuthLayout';
@@ -120,6 +121,7 @@ function App() {
             <Route path="/rapports" element={<Reports />} />
             <Route path="/ventes/:id/modifier" element={<ModifierVente />} />
             <Route path="/commandes/:id/modifier" element={<ModifierCommande />} />
+            <Route path="/depenses" element={<Depenses />} />
           </Route>
 
           {/* Redirection par défaut */}

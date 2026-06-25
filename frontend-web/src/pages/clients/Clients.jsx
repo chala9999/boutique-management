@@ -10,6 +10,7 @@ import { usePermissions } from '../../hooks/usePermissions';
 
 const Clients = () => {
   const queryClient = useQueryClient();
+  const { isComptable } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ const Clients = () => {
   const { data: boutiques } = useQuery({
     queryKey: ['boutiques'],
     queryFn: () => boutiquesAPI.getAll(),
+    enabled: !isComptable,
   });
 
   // Supprimer un client
@@ -108,6 +110,7 @@ const Clients = () => {
             </div>
           </div>
 
+          {!isComptable && (
           <div>
             <label className="label">Boutique</label>
             <select
@@ -124,6 +127,7 @@ const Clients = () => {
               ))}
             </select>
           </div>
+          )}
         </div>
       </div>
 

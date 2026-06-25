@@ -26,9 +26,8 @@ class VenteViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'create':
             self.permission_classes = [IsAuthenticated, CanCreateVente]
-        elif self.action in ['list', 'retrieve', 'statistiques', 'ventes_par_jour']:
-            # Comptables et admins peuvent voir
-            self.permission_classes = [IsAuthenticated, IsAdminOrComptable]
+        elif self.action in ['list', 'retrieve', 'statistiques', 'ventes_par_jour', 'top_produits']:
+            self.permission_classes = [IsAuthenticated]
         else:
             self.permission_classes = [IsAuthenticated, IsVendeur]
         return super().get_permissions()
@@ -272,35 +271,62 @@ class VenteViewSet(viewsets.ModelViewSet):
     def ajouter_paiement(self, request, pk=None):
         """Ajouter un paiement à une vente"""
         vente = self.get_object()
-        
+
         if vente.statut == 'annulee':
             return Response(
                 {'error': 'Impossible d\'ajouter un paiement à une vente annulée'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        serializer = PaiementSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        montant = serializer.validated_data['montant']
-        
-        if vente.montant_restant < montant:
+
+        if vente.statut_paiement == 'paye':
             return Response(
-                {'error': f'Le montant dépasse le restant dû ({vente.montant_restant})'},
+                {'error': 'Cette vente est déjà entièrement payée'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        # Crée le paiement
+
+        montant = request.data.get('montant')
+        mode_paiement = request.data.get('mode_paiement', 'especes')
+        reference = request.data.get('reference', '')
+        notes = request.data.get('notes', '')
+
+        if not montant:
+            return Response(
+                {'error': 'Le montant est requis'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        from decimal import Decimal
+        montant = Decimal(str(montant))
+
+        if montant <= 0:
+            return Response(
+                {'error': 'Le montant doit être positif'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if montant > vente.montant_restant:
+            return Response(
+                {'error': f'Le montant ({montant}) dépasse le restant dû ({vente.montant_restant})'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Créer le paiement
         paiement = Paiement.objects.create(
             vente=vente,
-            **serializer.validated_data
+            montant=montant,
+            mode_paiement=mode_paiement,
+            reference=reference,
+            notes=notes
         )
-        
-        # Met à jour la vente
+
+        # Mettre à jour la vente
         vente.montant_paye += montant
         vente.calculer_totaux()
-        
-        return Response(PaiementSerializer(paiement).data, status=status.HTTP_201_CREATED)
+
+        return Response(
+            PaiementSerializer(paiement).data,
+            status=status.HTTP_201_CREATED
+        )
     
     @action(detail=False, methods=['get'])
     def statistiques(self, request):

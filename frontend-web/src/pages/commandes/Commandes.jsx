@@ -13,6 +13,7 @@ import { usePermissions } from '../../hooks/usePermissions';
 const Commandes = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { isComptable } = usePermissions();
   const { can } = usePermissions();
   const [filters, setFilters] = useState({
     search: '',
@@ -38,6 +39,7 @@ const Commandes = () => {
   const { data: boutiques } = useQuery({
     queryKey: ['boutiques'],
     queryFn: () => boutiquesAPI.getAll(),
+    enabled: !isComptable,
   });
 
   // Récupérer les fournisseurs
@@ -204,7 +206,8 @@ const Commandes = () => {
               />
             </div>
           </div>
-
+  
+          {!isComptable && (
           <div>
             <label className="label">Boutique</label>
             <select
@@ -221,7 +224,7 @@ const Commandes = () => {
               ))}
             </select>
           </div>
-
+           )}
           <div>
             <label className="label">Fournisseur</label>
             <select

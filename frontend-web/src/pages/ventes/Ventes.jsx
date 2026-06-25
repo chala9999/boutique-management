@@ -46,6 +46,7 @@ const Ventes = () => {
   const { data: boutiques } = useQuery({
     queryKey: ['boutiques'],
     queryFn: () => boutiquesAPI.getAll(),
+    enabled: !isComptable,
   });
 
   const handleFilterChange = (e) => {
@@ -187,7 +188,8 @@ const Ventes = () => {
               />
             </div>
           </div>
-
+          
+          {!isComptable && (
           <div>
             <label className="label">Boutique</label>
             <select
@@ -204,7 +206,7 @@ const Ventes = () => {
               ))}
             </select>
           </div>
-
+          )}
           <div>
             <label className="label">Statut</label>
             <select

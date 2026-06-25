@@ -20,6 +20,14 @@ export const reportsAPI = {
     return response.data;
   },
 
+  exportFinancesExcel: async (params) => {
+  const response = await axios.get('/rapports/export/finances/', {
+    params,
+    responseType: 'blob'
+  });
+  return response.data;
+},
+
   // Rapport des vendeurs
   getVendeursReport: async (params) => {
     const response = await axios.get('/rapports/vendeurs/', { params });
